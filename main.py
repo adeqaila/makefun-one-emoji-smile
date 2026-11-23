@@ -80,6 +80,26 @@ def main() -> None:
     assert written == EMOJI, "entry.txt does not hold exactly the emoji"
     assert 1 <= len(written) <= 8, "entry.txt outside the 1-8 character gate"
     assert written.strip() != "", "entry.txt is only white space"
+    # Byte-level self-verification on the exact file just written.
+    verify_entry(path)
+
+
+def verify_entry(path):
+    """Re-read the written entry and fail loudly unless it is exactly one
+    emoji: 6 bytes UTF-8, no trailing newline, 2 code points, starting
+    with an emoji/symbol code point."""
+    with open(path, "rb") as fh:
+        raw = fh.read()
+    if len(raw) != 6:
+        raise SystemExit("entry must be exactly 6 bytes, got %d" % len(raw))
+    if raw.endswith(b"\n"):
+        raise SystemExit("entry must not end with a newline")
+    text = raw.decode("utf-8")
+    if len(text) != 2:
+        raise SystemExit("entry must be exactly one emoji (2 code points)")
+    import unicodedata
+    if unicodedata.category(text[0]) not in ("So", "Sk", "Sm", "Sc"):
+        raise SystemExit("entry must start with an emoji/symbol code point")
 
 
 if __name__ == "__main__":
